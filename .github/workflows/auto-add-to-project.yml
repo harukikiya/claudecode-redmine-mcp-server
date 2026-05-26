@@ -22,7 +22,7 @@ jobs:
   add-to-project:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/add-to-project@v1
+      - uses: actions/add-to-project@v2
         with:
           # ProjectのURL。repo作成後に正しい値に置換すること
           # 例: https://github.com/users/harukikiya/projects/1
