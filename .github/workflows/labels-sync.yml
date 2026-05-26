@@ -3,6 +3,9 @@
 # ---------------------------------------------------------------------
 # .github/labels.yml を編集してmainにpushすると、GitHub上のラベルと同期する。
 # ラベル定義をgit管理することで、設定をrepoに残せる（UIで触ると履歴に残らない）。
+#
+# action: EndBug/label-sync@v2
+# （旧 micnncim/action-label-syncer はメンテ停止＋createが効かない不具合あり）
 # =====================================================================
 
 name: Sync Labels
@@ -19,15 +22,17 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    # label作成/削除のための権限
+    permissions:
+      issues: write
     steps:
       - uses: actions/checkout@v4
 
       - name: Sync labels
-        uses: micnncim/action-label-syncer@v1
+        uses: EndBug/label-sync@v2
         with:
-          manifest: .github/labels.yml
-          # prune: true は labels.yml に無いラベルをGitHubから削除する
-          # 知らないラベルを残したくない場合のみtrue（運用始まったら一旦false推奨）
-          prune: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # ラベル定義ファイルへのpath
+          config-file: .github/labels.yml
+          # true: labels.ymlにないラベルをGitHubから削除（micnncimの`prune`相当）
+          # 運用開始してから false にしてもよい（誤削除防止）
+          delete-other-labels: true
