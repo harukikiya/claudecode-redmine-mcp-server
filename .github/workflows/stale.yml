@@ -1,0 +1,61 @@
+# =====================================================================
+# Stale workflow
+# ---------------------------------------------------------------------
+# 長期間アクティビティのないissue/PRを自動でstale扱いにし、最終的にcloseする。
+# 個人プロジェクトでは「あとで気が向いたら…」issueを抱えがちなので整理補助になる。
+# ただし本当に必要なissueも消えるリスクがあるため、threshold は長めに設定し、
+# 重要issueはラベルで除外する。
+# =====================================================================
+
+name: Stale
+
+on:
+  schedule:
+    # 毎日 01:30 UTC = 10:30 JST に実行（昼前にチェック）
+    - cron: "30 1 * * *"
+  # 手動実行も可能に
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          # issueが90日アクティビティ無しで「stale」とマーク
+          days-before-issue-stale: 90
+          # その後30日無動きでclose（合計約4ヶ月）
+          days-before-issue-close: 30
+
+          # PRはサイクルを短めに（実装中のものを溜めない）
+          days-before-pr-stale: 45
+          days-before-pr-close: 14
+
+          # stale通知メッセージ（日本語）
+          stale-issue-message: |
+            このissueは90日アクティビティがないため stale としました。
+            まだ必要であれば、コメントを残してください。
+            30日以内に動きがなければ自動でcloseします。
+          stale-pr-message: |
+            このPRは45日アクティビティがないため stale としました。
+            14日以内に動きがなければ自動でcloseします。
+          close-issue-message: |
+            長期間アクティビティが無かったためcloseします。再開する場合は新規issueを作成するか、reopenしてください。
+          close-pr-message: |
+            長期間アクティビティが無かったためcloseします。継続する場合はreopenしてください。
+
+          # stale扱いから除外するラベル
+          # Tier 1〜3 や status: blocked は意図的に保留しているケースが多いので除外
+          exempt-issue-labels: "tier-1,tier-2,tier-3,status: blocked,good first issue,help wanted"
+          exempt-pr-labels: "status: blocked"
+
+          # 1回の実行で処理するissue/PR数の上限（一気に荒らさない）
+          operations-per-run: 30
+
+          # PRに対するstaleラベル名（labelsで定義していないので自動作成される）
+          stale-pr-label: "stale"
+          stale-issue-label: "stale"

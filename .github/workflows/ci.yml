@@ -1,0 +1,74 @@
+# =====================================================================
+# CI workflow
+# ---------------------------------------------------------------------
+# push / PRに対して lint / format check / type check / test / coverage を実行する。
+# 全てがpassしないとmergeできないように、branch protectionで required status check に指定する。
+# coverage結果はCodecovにアップロード（要 CODECOV_TOKEN）。
+# =====================================================================
+
+name: CI
+
+# トリガー条件
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# 同一PR/branchで複数のrunが走った場合、古い方をキャンセル（CI minute節約）
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # コードをcheckout
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # uvをセットアップ（ADR-0003で採用）
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          # uv自体のバージョン。"latest"だと再現性が落ちるので、運用に乗ったら固定推奨
+          version: "latest"
+          # uv cacheをGitHub Actions cacheに保存（依存解決の高速化）
+          enable-cache: true
+
+      # Pythonをセットアップ（uvが pyproject.toml の requires-python を見て決める）
+      - name: Set up Python
+        run: uv python install
+
+      # 依存をインストール（dev dependenciesも含む）
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      # ruff lint（コードスタイル + 静的解析）
+      - name: Run ruff check
+        run: uv run ruff check .
+
+      # ruff format check（修正はせず、整形済みか確認のみ）
+      - name: Run ruff format check
+        run: uv run ruff format --check .
+
+      # mypy strict mode（型の整合性チェック）
+      - name: Run mypy
+        run: uv run mypy --strict .
+
+      # pytest + coverage計測
+      # --cov-report=xml はCodecovにuploadするため
+      # --cov-report=term はCIログでもカバレッジを見えるようにするため
+      - name: Run pytest with coverage
+        run: uv run pytest --cov=src --cov-report=xml --cov-report=term
+
+      # Codecovにカバレッジレポートをアップロード
+      # repo > Settings > Secrets > Actions に CODECOV_TOKEN を登録する必要あり
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          # tokenが未設定でもCI自体は落とさない（初期セットアップ前にCIを通すため）
+          fail_ci_if_error: false

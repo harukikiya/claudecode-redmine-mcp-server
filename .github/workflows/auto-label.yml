@@ -1,0 +1,26 @@
+# =====================================================================
+# Auto Label workflow
+# ---------------------------------------------------------------------
+# PRの変更ファイルパスを見て、.github/labeler.yml の定義に従い自動でラベル付与。
+# Issue Forms で付くラベルとは別軸（path-basedの分類）。
+# =====================================================================
+
+name: Auto Label
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    # PRにラベルを書き込む権限が必要
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: actions/labeler@v5
+        with:
+          configuration-path: .github/labeler.yml
+          # 既存ラベルを保持するか上書きするか
+          # true = 既存ラベルを尊重、追加のみ。false = 毎回全upload
+          sync-labels: false

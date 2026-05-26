@@ -1,0 +1,17 @@
+# =====================================================================
+# Issue picker config
+# ---------------------------------------------------------------------
+# 「Open a blank issue」を無効化し、必ず Issue Form 経由で起票させる。
+# テンプレに合わない議論はDiscussionsへ誘導する。
+# =====================================================================
+
+# Blank issue（テンプレなしで起票）を禁止
+# これでissueが必ず構造化された情報を持つようになる
+blank_issues_enabled: false
+
+# 「コンタクト先」リンク。Form picker画面に表示される
+contact_links:
+  - name: 💬 Discussion / 設計議論
+    # repo作成後にUSERNAME/REPOを置換すること
+    url: https://github.com/harukikiya/claudecode-redmine-mcp-server/discussions
+    about: 個別issue化する前のオープンな議論はDiscussionsへ

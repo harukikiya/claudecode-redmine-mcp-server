@@ -1,0 +1,64 @@
+# =====================================================================
+# Bug Report Issue Form
+# ---------------------------------------------------------------------
+# 不具合を報告するときのテンプレ。
+# 再現手順を必須にして「動きません」だけのreportを防ぐ。
+# =====================================================================
+
+name: 🐛 Bug Report
+description: 不具合の報告
+# 自動付与されるラベル（labels.ymlの定義と一致させる）
+labels: ["type: bug", "status: triage"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: 概要
+      description: 何が問題か、1〜2文で
+      placeholder: 例) list_issuesが status_id=closed を渡すとValidationErrorで落ちる
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: どう操作したらこの問題が起きるかを順番に
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待する挙動
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の挙動
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: 環境
+      description: Python version、OS、Redmine version等
+      value: |
+        - Python:
+        - OS:
+        - Redmine version:
+        - MCP server version:
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: ログ / エラーメッセージ
+      # render: shell を付けるとcode blockとして表示される
+      render: shell

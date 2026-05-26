@@ -1,0 +1,44 @@
+# =====================================================================
+# Path-based Auto-label config
+# ---------------------------------------------------------------------
+# PRが変更したファイルのパスから自動でラベルを付ける。
+# .github/workflows/auto-label.yml がこのファイルを使う。
+# 「labelを毎回手で付ける手間」を省くための仕組み。
+# =====================================================================
+
+# docsだけの変更
+"type: docs":
+  - changed-files:
+    - any-glob-to-any-file:
+      - "docs/**/*.md"
+      - "README.md"
+      - "CONTRIBUTING.md"
+      - "SECURITY.md"
+
+# tool実装に該当する変更
+"type: tool":
+  - changed-files:
+    - any-glob-to-any-file:
+      - "src/tools/**"
+      - "tests/integration/test_*.py"
+
+# ADRの追加/編集
+"type: adr":
+  - changed-files:
+    - any-glob-to-any-file:
+      - "docs/adr/**"
+
+# CI/CD・dev基盤の変更
+"type: infra":
+  - changed-files:
+    - any-glob-to-any-file:
+      - ".github/**"
+      - "pyproject.toml"
+      - "uv.lock"
+
+# 依存変更（Dependabotとも被るが、人手の変更にも付ける）
+"dependencies":
+  - changed-files:
+    - any-glob-to-any-file:
+      - "pyproject.toml"
+      - "uv.lock"

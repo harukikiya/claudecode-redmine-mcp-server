@@ -1,0 +1,58 @@
+# =====================================================================
+# ADR Proposal Issue Form
+# ---------------------------------------------------------------------
+# 新規ADRを書く前に、議論用issueとして起票する。
+# MADR v4 形式に従う。issue上で議論を確定させてから docs/adr/ に文書化。
+# =====================================================================
+
+name: 📐 ADR Proposal
+description: 設計判断（ADR）を提案する
+labels: ["type: adr", "status: proposed"]
+body:
+  - type: input
+    id: title
+    attributes:
+      label: ADR title
+      description: 採番（ADR-NNNN）は merge直前に確定すれば良い
+      placeholder: 例) Python version policy
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context and Problem Statement
+      description: 背景と解決したい問題
+    validations:
+      required: true
+
+  - type: textarea
+    id: drivers
+    attributes:
+      label: Decision Drivers
+      value: |
+        -
+        -
+
+  - type: textarea
+    id: options
+    attributes:
+      label: Considered Options
+      value: |
+        -
+        -
+    validations:
+      required: true
+
+  - type: textarea
+    id: tradeoffs
+    attributes:
+      label: Pros and Cons / Trade-offs
+    validations:
+      required: true
+
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Recommendation
+      description: 推奨案と理由

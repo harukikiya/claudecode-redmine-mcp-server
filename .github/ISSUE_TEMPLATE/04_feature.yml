@@ -1,0 +1,29 @@
+# =====================================================================
+# Feature / Enhancement Issue Form
+# ---------------------------------------------------------------------
+# tool以外の機能追加・改善を提案する。
+# 大きな変更ならADR Proposal形式を使う方が筋がいい。
+# =====================================================================
+
+name: ✨ Feature / Enhancement
+description: tool以外の機能追加・改善
+labels: ["type: feature", "status: triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 解決したい課題
+      description: どんな困りごとを解消するための機能か
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 提案する解決策
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 検討した代替案
+      description: 他のアプローチと、なぜ選ばなかったか

@@ -1,0 +1,40 @@
+# =====================================================================
+# Dependabot config
+# ---------------------------------------------------------------------
+# 依存パッケージとGitHub Actionsの自動更新PRを定期的に作成する。
+# 脆弱な依存を放置しないための仕組み。Conventional Commits形式を強制。
+# =====================================================================
+
+version: 2
+updates:
+  # Python依存（uvがpyproject.tomlを介して管理）
+  - package-ecosystem: "pip"
+    directory: "/"
+    # 週1チェック。daily だとPRが溢れる、monthlyだとセキュリティ反映が遅れる
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    # 1回あたりのPR上限（一気に来すぎないように）
+    open-pull-requests-limit: 5
+    # 自動付与されるラベル（labels.ymlで定義したものと一致させる）
+    labels:
+      - "dependencies"
+      - "python"
+    # commit messageのprefix（Conventional Commitsに揃える）
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+
+  # GitHub Actions自体の更新
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore"
+      include: "scope"

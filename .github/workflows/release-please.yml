@@ -1,0 +1,35 @@
+# =====================================================================
+# Release Please workflow
+# ---------------------------------------------------------------------
+# Conventional Commits を解析して、自動で version bump + CHANGELOG 更新の
+# PRを作る。そのPRをmergeすると tag + GitHub Release が作成される。
+#
+# 流れ:
+#   1. feat:/fix:/chore: 等のcommitがmainに入る
+#   2. release-please-bot がそれを集約し「Release vX.Y.Z」PRを作成
+#   3. PRの中身（CHANGELOG.md / pyproject.tomlのversion更新）を確認
+#   4. mergeすると自動でtag + release が生成される
+# =====================================================================
+
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+
+# PR作成 + tag作成権限が必要
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v4
+        with:
+          # 単一packageのPythonプロジェクト
+          # pyproject.toml の version を自動更新してくれる
+          release-type: python
+          # 初期versionは pyproject.toml の値が起点
+          # 必要に応じて release-please-config.json で詳細制御も可能

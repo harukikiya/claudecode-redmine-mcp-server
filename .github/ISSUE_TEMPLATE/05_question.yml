@@ -1,0 +1,23 @@
+# =====================================================================
+# Question Issue Form
+# ---------------------------------------------------------------------
+# 質問・議論用。オープンな議論は Discussions に流す方が望ましいが、
+# repo内に残しておきたい議題のために残しておく。
+# =====================================================================
+
+name: ❓ Question
+description: 質問・議論（オープンな議論はDiscussions推奨）
+labels: ["type: question"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: 質問
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: 背景・調べたこと
+      description: 既に試したこと、参照したドキュメント等

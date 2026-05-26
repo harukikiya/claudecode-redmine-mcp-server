@@ -1,0 +1,31 @@
+# =====================================================================
+# Auto Add to Project workflow
+# ---------------------------------------------------------------------
+# 新規issueをGitHub Projects（kanban）に自動追加する。
+# 手動でboardにdragする手間を省く。
+#
+# 前提セットアップ:
+#   1. Projects (beta/v2) で kanban board を作成
+#   2. Settings > Developer settings > Personal access tokens で
+#      classic PATを発行（scope: project, write:org/repo）
+#   3. Settings > Secrets > Actions に PROJECT_TOKEN として登録
+#   4. 下の project-url にboardのURLを設定
+# =====================================================================
+
+name: Auto Add to Project
+
+on:
+  issues:
+    types: [opened, reopened]
+
+jobs:
+  add-to-project:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/add-to-project@v1
+        with:
+          # ProjectのURL。repo作成後に正しい値に置換すること
+          # 例: https://github.com/users/harukikiya/projects/1
+          project-url: https://github.com/users/harukikiya/projects/2
+          # Project操作は GITHUB_TOKEN では権限不足なのでPATが必要
+          github-token: ${{ secrets.PROJECT_TOKEN }}

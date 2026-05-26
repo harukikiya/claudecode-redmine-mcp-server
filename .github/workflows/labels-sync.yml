@@ -1,0 +1,33 @@
+# =====================================================================
+# Labels Sync workflow
+# ---------------------------------------------------------------------
+# .github/labels.yml を編集してmainにpushすると、GitHub上のラベルと同期する。
+# ラベル定義をgit管理することで、設定をrepoに残せる（UIで触ると履歴に残らない）。
+# =====================================================================
+
+name: Sync Labels
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # labels.yml が変更されたときのみ実行
+      - ".github/labels.yml"
+  # 手動実行も可能に（actions tabからRun workflow）
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync labels
+        uses: micnncim/action-label-syncer@v1
+        with:
+          manifest: .github/labels.yml
+          # prune: true は labels.yml に無いラベルをGitHubから削除する
+          # 知らないラベルを残したくない場合のみtrue（運用始まったら一旦false推奨）
+          prune: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

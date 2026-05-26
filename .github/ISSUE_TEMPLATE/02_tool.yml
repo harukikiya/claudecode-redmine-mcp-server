@@ -1,0 +1,61 @@
+# =====================================================================
+# Tool Implementation Issue Form
+# ---------------------------------------------------------------------
+# docs/tools.md に定義された25 tools の1つを実装するときのテンプレ。
+# tool名・tier・acceptance criteriaを明示することで、Claude Codeが
+# implement-redmine-tool skill を使って自動的に作業を進められる。
+# =====================================================================
+
+name: 🔧 Tool Implementation
+description: docs/tools.md記載のtoolを実装する
+labels: ["type: tool", "status: ready"]
+body:
+  - type: input
+    id: tool_name
+    attributes:
+      label: Tool名
+      description: docs/tools.md の命名と一致させる
+      placeholder: 例) create_issue
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tier
+    attributes:
+      label: Tier
+      # tier-1 / tier-2 / tier-3 ラベルとも対応する
+      options:
+        - "Tier 1 (M2)"
+        - "Tier 2 (M3前半)"
+        - "Tier 3 (M3後半)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: spec_link
+    attributes:
+      label: spec
+      description: docs/tools.md の該当セクションへのリンクまたは引用
+      placeholder: docs/tools.md#create_issue
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance Criteria
+      # デフォルト値を入れておくと、PRレビュー時にチェックボックスが揃う
+      value: |
+        - [ ] toolが docs/tools.md のschemaに従って動作する
+        - [ ] success caseのintegration test
+        - [ ] error categoryをカバーするtest（NotFound / Validation / AuthFailed等）
+        - [ ] 日本語のGoogle style docstring（Args / Returns / Raises / Example）
+        - [ ] 全引数・戻り値・変数に型注釈
+        - [ ] mypy --strict pass
+        - [ ] ruff check pass
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: 設計メモ / 注意点
+      description: schema設計の論点・proposal化が必要そうな箇所等
