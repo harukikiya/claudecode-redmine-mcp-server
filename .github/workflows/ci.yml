@@ -31,7 +31,7 @@ jobs:
 
       # uvをセットアップ（ADR-0003で採用）
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v7
         with:
           # uv自体のバージョン。"latest"だと再現性が落ちるので、運用に乗ったら固定推奨
           version: "latest"
