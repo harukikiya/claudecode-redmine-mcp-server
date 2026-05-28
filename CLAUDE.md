@@ -65,6 +65,44 @@ default modelは `.claude/settings.json` で`sonnet`に固定。
 - **ADR-0007**: Tool粒度 → fine-grained
 - **ADR-0008**: Error handling → categorized error response
 
+---
+
+## Operating Modes
+
+このプロジェクトには2つの作業モードがある。セッション開始時にどちらで動くか宣言する。
+
+### Mode A: Proposal-first
+
+issueにproposalを書く → ユーザー承認 → 実装 → PR の順。複雑な設計判断・大規模refactoring・新規ADRが絡む場合に使う。
+
+### Mode B: Self-driving with mobile approval（default）
+
+issueを受け取ったらClaude Codeが提案+実装をPRにまとめる → ユーザーがPRをモバイルでreview → approve/request changes/comment。日常の実装・docs追加・tool追加・bug fix に使う。
+
+### Mode B の制約
+
+モバイル承認を成立させるため:
+
+- **PR は target < 500 LOC**（test込み）。超えそうなら分割
+- **PR description で自己完結**: 何を決めて何を実装したか、リンク先を辿らなくても分かる形
+- **self-review summary 必須**（`pre-push-review` skill を実行、`docs/review-checklist.md` 参照）
+
+### Self-driving の例外（Mode Bでも事前確認必須）
+
+以下に該当する場合は **PRを出さず、issueコメントで設計案を出して反応待ち**:
+
+- 新規ADRが必要な設計判断
+- 既存ADR / `docs/tools.md` と矛盾する変更
+- 依存追加（`pyproject.toml` の `dependencies` を増やす）
+- CI / `.github/workflows/` の変更
+- secret / auth 周りの変更
+- MCP protocol 層への干渉（low-level SDK内部に手を入れる、独自transport等）
+- `pyproject.toml` の構造変更
+
+迷ったらMode A、明確ならMode B。Sensitive Areasに当たったら自動でMode Aに切り替える。
+
+---
+
 ## Prompting Style
 
 複雑な提案や指示はXML tagsで構造化する。Claudeはこの形式に最適化されている。
@@ -184,6 +222,7 @@ default modelは `.claude/settings.json` で`sonnet`に固定。
 
 ## Key References
 
+- **Roadmap**: [`docs/roadmap.md`](docs/roadmap.md) ← 「今どこにいて次にどこへ」のマップ
 - **ADR**: [`docs/adr/`](docs/adr/) ([README](docs/adr/README.md))
 - **Tool spec**: [`docs/tools.md`](docs/tools.md)
 - **Python conventions**: [`.claude/rules/python-conventions.md`](.claude/rules/python-conventions.md)
