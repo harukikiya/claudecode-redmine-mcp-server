@@ -7,11 +7,17 @@ Server クラスを直接使ってprotocol層を明示的に構成する。
 from __future__ import annotations
 
 import asyncio
+import json
 from typing import Any
 
 from mcp import types
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
+
+from redmine_mcp.client import RedmineClient
+from redmine_mcp.config import RedmineConfig
+from redmine_mcp.errors import RedmineError
+from redmine_mcp.tools import users as tools_users
 
 SERVER_NAME: str = "redmine-mcp-server"
 
@@ -22,9 +28,6 @@ server: Server = Server(SERVER_NAME)
 async def handle_list_tools() -> list[types.Tool]:
     """利用可能なMCP toolの一覧を返す。
 
-    M1ではhello world確認用の ``ping`` toolのみ登録する。
-    Tier 1 toolはM2で追加する。
-
     Returns:
         登録済みtoolのリスト。
     """
@@ -32,6 +35,13 @@ async def handle_list_tools() -> list[types.Tool]:
         types.Tool(
             name="ping",
             description="サーバーの疎通確認。常に pong を返す。Redmineへの接続は行わない。",
+            inputSchema={"type": "object", "properties": {}},
+        ),
+        types.Tool(
+            name="get_current_user",
+            description=(
+                "現在の認証ユーザーの情報を取得する。自分のuser IDの解決やAPIキー疎通確認に使う。"
+            ),
             inputSchema={"type": "object", "properties": {}},
         ),
     ]
@@ -43,6 +53,9 @@ async def handle_call_tool(
     arguments: dict[str, Any],
 ) -> list[types.TextContent]:
     """MCP tool呼び出しを処理する。
+
+    Redmine toolはconfig/clientを生成して各tool関数に委譲する。
+    RedmineErrorはcategorized JSON errorとして返す（ADR-0008）。
 
     Args:
         name: 呼び出すtool名。
@@ -56,6 +69,16 @@ async def handle_call_tool(
     """
     if name == "ping":
         return [types.TextContent(type="text", text="pong")]
+
+    config: RedmineConfig = RedmineConfig()  # type: ignore[call-arg]
+    try:
+        async with RedmineClient(config) as client:
+            if name == "get_current_user":
+                result: tools_users.CurrentUser = await tools_users.get_current_user(client)
+                return [types.TextContent(type="text", text=result.model_dump_json())]
+    except RedmineError as e:
+        error_body: str = json.dumps({"error": str(e.category), "message": e.message})
+        return [types.TextContent(type="text", text=error_body)]
 
     raise ValueError(f"Unknown tool: {name!r}")
 
