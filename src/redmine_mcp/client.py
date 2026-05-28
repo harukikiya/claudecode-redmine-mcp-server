@@ -1,7 +1,7 @@
 """Redmine REST API クライアントモジュール。
 
 ADR-0004 (httpx) および ADR-0006 (API key auth) に従う。
-M1では雛形のみ定義する。実際のRedmine API呼び出しはM2で実装する。
+HTTPエラーおよびネットワーク層エラーをADR-0008のcategorized errorに変換する。
 """
 
 from __future__ import annotations
@@ -116,9 +116,14 @@ class RedmineClient:
             JSONレスポンスをdict型で返す。
 
         Raises:
-            RedmineError: HTTPエラーが発生した場合。
+            RedmineError: HTTPエラーまたはネットワークエラーが発生した場合。
         """
-        response: httpx.Response = await self._http.get(path, params=params)
+        try:
+            response: httpx.Response = await self._http.get(path, params=params)
+        except httpx.TimeoutException:
+            raise RedmineError(ErrorCategory.SERVER_ERROR, "Request timed out") from None
+        except httpx.ConnectError:
+            raise RedmineError(ErrorCategory.SERVER_ERROR, "Failed to connect to Redmine") from None
         self._raise_for_status(response)
         result: dict[str, Any] = response.json()
         return result
@@ -138,9 +143,14 @@ class RedmineClient:
             JSONレスポンスをdict型で返す。
 
         Raises:
-            RedmineError: HTTPエラーが発生した場合。
+            RedmineError: HTTPエラーまたはネットワークエラーが発生した場合。
         """
-        response: httpx.Response = await self._http.post(path, json=json)
+        try:
+            response: httpx.Response = await self._http.post(path, json=json)
+        except httpx.TimeoutException:
+            raise RedmineError(ErrorCategory.SERVER_ERROR, "Request timed out") from None
+        except httpx.ConnectError:
+            raise RedmineError(ErrorCategory.SERVER_ERROR, "Failed to connect to Redmine") from None
         self._raise_for_status(response)
         result: dict[str, Any] = response.json()
         return result
@@ -163,9 +173,14 @@ class RedmineClient:
             JSONレスポンス（Redmineが204を返す場合は空dict）。
 
         Raises:
-            RedmineError: HTTPエラーが発生した場合。
+            RedmineError: HTTPエラーまたはネットワークエラーが発生した場合。
         """
-        response: httpx.Response = await self._http.put(path, json=json)
+        try:
+            response: httpx.Response = await self._http.put(path, json=json)
+        except httpx.TimeoutException:
+            raise RedmineError(ErrorCategory.SERVER_ERROR, "Request timed out") from None
+        except httpx.ConnectError:
+            raise RedmineError(ErrorCategory.SERVER_ERROR, "Failed to connect to Redmine") from None
         self._raise_for_status(response)
         if response.status_code == 204 or not response.content:
             return {}
