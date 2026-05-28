@@ -12,8 +12,8 @@
 | M# | 名前 | 状態 | 目的 |
 |---|---|---|---|
 | M0 | 設計・調査 | ✅ done | ADR・docs・規約・GitHub基盤の確立 |
-| M1 | Skeleton | 🚧 in progress | 動く最小のMCP server（hello world + auth疎通） |
-| M2 | Core Tools (Tier 1) | pending | 12 tools — issue CRUD + 工数 + 解決系 |
+| M1 | Skeleton | ✅ done | 動く最小のMCP server（hello world + auth疎通） |
+| M2 | Core Tools (Tier 1) | 🚧 in progress | 12 tools — issue CRUD + 工数 + 解決系 |
 | M3 | Extended Tools (Tier 2 + 3) | pending | 13 tools — wiki / attachment / search / queries 等 |
 | M4 | 品質・CI | pending | release process / packaging / polish |
 
@@ -32,7 +32,7 @@
 
 ---
 
-## M1: Skeleton 🚧
+## M1: Skeleton ✅
 
 **Goal**: 動く最小のMCP serverで「auth疎通 + protocol動作」が確認できる状態
 
@@ -48,10 +48,10 @@
 - `.gitignore`, `.env.example`
 
 **Acceptance Criteria**:
-- [ ] `uv run python -m redmine_mcp` でMCP serverがstdio上で起動
-- [ ] Claude Desktop / Claude Code から接続できる（`initialize` / `tools/list` が応答、toolはまだ無くてOK）
-- [ ] Redmine APIへの認証付きrequestが1本通る（`GET /users/current.json` を内部で叩いて疎通確認）
-- [ ] CIが `ruff` / `mypy --strict` / `pytest` でgreen
+- [x] `uv run python -m redmine_mcp` でMCP serverがstdio上で起動
+- [x] Claude Desktop / Claude Code から接続できる（`initialize` / `tools/list` が応答、toolはまだ無くてOK）
+- [x] Redmine APIへの認証付きrequestが1本通る（`GET /users/current.json` を内部で叩いて疎通確認）
+- [x] CIが `ruff` / `mypy --strict` / `pytest` でgreen
 
 **Dependencies**: M0 ✅
 
@@ -61,7 +61,7 @@
 
 ---
 
-## M2: Core Tools (Tier 1) — 12 tools
+## M2: Core Tools (Tier 1) — 12 tools 🚧
 
 **Goal**: 「Redmineに記録する」基本ループが完成
 
