@@ -17,6 +17,7 @@ from mcp.server.stdio import stdio_server
 from redmine_mcp.client import RedmineClient
 from redmine_mcp.config import RedmineConfig
 from redmine_mcp.errors import RedmineError
+from redmine_mcp.tools import projects as tools_projects
 from redmine_mcp.tools import users as tools_users
 
 SERVER_NAME: str = "redmine-mcp-server"
@@ -43,6 +44,37 @@ async def handle_list_tools() -> list[types.Tool]:
                 "現在の認証ユーザーの情報を取得する。自分のuser IDの解決やAPIキー疎通確認に使う。"
             ),
             inputSchema={"type": "object", "properties": {}},
+        ),
+        types.Tool(
+            name="list_projects",
+            description=(
+                "自分が参照できるプロジェクト一覧を取得する。"
+                "create_issue や list_issues の前に project_id（identifier）を調べるために使う。"
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "include": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": (
+                            "追加取得するリソース名のリスト。"
+                            "指定可能な値: trackers, issue_categories, "
+                            "enabled_modules, time_entry_activities。"
+                        ),
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "取得件数上限（default 25, max 100）",
+                        "default": 25,
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "ページネーションオフセット",
+                        "default": 0,
+                    },
+                },
+            },
         ),
     ]
 
@@ -76,6 +108,19 @@ async def handle_call_tool(
             if name == "get_current_user":
                 result: tools_users.CurrentUser = await tools_users.get_current_user(client)
                 return [types.TextContent(type="text", text=result.model_dump_json())]
+            if name == "list_projects":
+                include_raw: list[str] | None = arguments.get("include")
+                limit: int = int(arguments.get("limit", 25))
+                offset: int = int(arguments.get("offset", 0))
+                projects_result: tools_projects.ListProjectsResult = (
+                    await tools_projects.list_projects(
+                        client,
+                        include=include_raw,
+                        limit=limit,
+                        offset=offset,
+                    )
+                )
+                return [types.TextContent(type="text", text=projects_result.model_dump_json())]
     except RedmineError as e:
         error_body: str = json.dumps({"error": str(e.category), "message": e.message})
         return [types.TextContent(type="text", text=error_body)]
