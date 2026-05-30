@@ -18,6 +18,7 @@ from redmine_mcp.client import RedmineClient
 from redmine_mcp.config import RedmineConfig
 from redmine_mcp.errors import RedmineError
 from redmine_mcp.tools import enumerations as tools_enums
+from redmine_mcp.tools import issues as tools_issues
 from redmine_mcp.tools import projects as tools_projects
 from redmine_mcp.tools import users as tools_users
 
@@ -101,6 +102,93 @@ async def handle_list_tools() -> list[types.Tool]:
             ),
             inputSchema={"type": "object", "properties": {}},
         ),
+        types.Tool(
+            name="list_issues",
+            description=(
+                "filter付きでissue一覧を取得する。"
+                "project_id / status_id / assigned_to_id 等でfilterできる。"
+                "assigned_to_id='me' で自分担当のissueを取得できる。"
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_id": {
+                        "type": "string",
+                        "description": "プロジェクトのidentifierまたは数値IDでfilterする。",
+                    },
+                    "status_id": {
+                        "type": "string",
+                        "description": (
+                            "ステータスでfilter。特殊値: open（デフォルト）, closed, *（全て）。"
+                            "list_issue_statuses で取得した数値IDも使える。"
+                        ),
+                    },
+                    "assigned_to_id": {
+                        "type": "string",
+                        "description": "担当者の数値IDでfilter。'me' で自分担当のみ取得。",
+                    },
+                    "tracker_id": {
+                        "type": "integer",
+                        "description": "トラッカーの数値IDでfilter。",
+                    },
+                    "priority_id": {
+                        "type": "integer",
+                        "description": "優先度の数値IDでfilter。",
+                    },
+                    "subject": {
+                        "type": "string",
+                        "description": "タイトルの部分一致でfilter。",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "取得件数上限（default 25, max 100）",
+                        "default": 25,
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "ページネーションオフセット",
+                        "default": 0,
+                    },
+                    "sort": {
+                        "type": "string",
+                        "description": "ソート条件（例: updated_on:desc, priority:asc）",
+                    },
+                    "include": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": (
+                            "追加取得するリソース名のリスト。"
+                            "指定可能な値: journals, attachments, relations, watchers, children。"
+                        ),
+                    },
+                },
+            },
+        ),
+        types.Tool(
+            name="get_issue",
+            description=(
+                "単一issueの詳細を取得する。"
+                "journals を include すると変更履歴・コメントも取得できる。"
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["issue_id"],
+                "properties": {
+                    "issue_id": {
+                        "type": "integer",
+                        "description": "取得するissueの数値ID。",
+                    },
+                    "include": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": (
+                            "追加取得するリソース名のリスト。"
+                            "指定可能な値: journals, attachments, relations, watchers, children。"
+                        ),
+                    },
+                },
+            },
+        ),
     ]
 
 
@@ -174,6 +262,28 @@ async def handle_call_tool(
                         text=json.dumps([p.model_dump() for p in priorities], ensure_ascii=False),
                     )
                 ]
+            if name == "list_issues":
+                issues_result: tools_issues.ListIssuesResult = await tools_issues.list_issues(
+                    client,
+                    project_id=arguments.get("project_id"),
+                    status_id=arguments.get("status_id"),
+                    assigned_to_id=arguments.get("assigned_to_id"),
+                    tracker_id=arguments.get("tracker_id"),
+                    priority_id=arguments.get("priority_id"),
+                    subject=arguments.get("subject"),
+                    limit=int(arguments.get("limit", 25)),
+                    offset=int(arguments.get("offset", 0)),
+                    sort=arguments.get("sort"),
+                    include=arguments.get("include"),
+                )
+                return [types.TextContent(type="text", text=issues_result.model_dump_json())]
+            if name == "get_issue":
+                issue_result: tools_issues.Issue = await tools_issues.get_issue(
+                    client,
+                    issue_id=int(arguments["issue_id"]),
+                    include=arguments.get("include"),
+                )
+                return [types.TextContent(type="text", text=issue_result.model_dump_json())]
     except RedmineError as e:
         error_body: str = json.dumps({"error": str(e.category), "message": e.message})
         return [types.TextContent(type="text", text=error_body)]
