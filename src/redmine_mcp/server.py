@@ -17,6 +17,7 @@ from mcp.server.stdio import stdio_server
 from redmine_mcp.client import RedmineClient
 from redmine_mcp.config import RedmineConfig
 from redmine_mcp.errors import RedmineError
+from redmine_mcp.tools import enumerations as tools_enums
 from redmine_mcp.tools import projects as tools_projects
 from redmine_mcp.tools import users as tools_users
 
@@ -76,6 +77,30 @@ async def handle_list_tools() -> list[types.Tool]:
                 },
             },
         ),
+        types.Tool(
+            name="list_issue_statuses",
+            description=(
+                "利用可能なissueステータス一覧を取得する。"
+                "create_issue / update_issue で status_id を指定するときに使う。"
+            ),
+            inputSchema={"type": "object", "properties": {}},
+        ),
+        types.Tool(
+            name="list_trackers",
+            description=(
+                "利用可能なトラッカー（issue種別）一覧を取得する。"
+                "create_issue で tracker_id を指定するときに使う。"
+            ),
+            inputSchema={"type": "object", "properties": {}},
+        ),
+        types.Tool(
+            name="list_priorities",
+            description=(
+                "利用可能なissue優先度一覧を取得する。"
+                "create_issue で priority_id を指定するときに使う。"
+            ),
+            inputSchema={"type": "object", "properties": {}},
+        ),
     ]
 
 
@@ -121,6 +146,34 @@ async def handle_call_tool(
                     )
                 )
                 return [types.TextContent(type="text", text=projects_result.model_dump_json())]
+            if name == "list_issue_statuses":
+                statuses: list[tools_enums.IssueStatus] = await tools_enums.list_issue_statuses(
+                    client
+                )
+                return [
+                    types.TextContent(
+                        type="text",
+                        text=json.dumps([s.model_dump() for s in statuses], ensure_ascii=False),
+                    )
+                ]
+            if name == "list_trackers":
+                trackers: list[tools_enums.Tracker] = await tools_enums.list_trackers(client)
+                return [
+                    types.TextContent(
+                        type="text",
+                        text=json.dumps([t.model_dump() for t in trackers], ensure_ascii=False),
+                    )
+                ]
+            if name == "list_priorities":
+                priorities: list[tools_enums.IssuePriority] = await tools_enums.list_priorities(
+                    client
+                )
+                return [
+                    types.TextContent(
+                        type="text",
+                        text=json.dumps([p.model_dump() for p in priorities], ensure_ascii=False),
+                    )
+                ]
     except RedmineError as e:
         error_body: str = json.dumps({"error": str(e.category), "message": e.message})
         return [types.TextContent(type="text", text=error_body)]
