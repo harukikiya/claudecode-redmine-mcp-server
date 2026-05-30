@@ -189,6 +189,134 @@ async def handle_list_tools() -> list[types.Tool]:
                 },
             },
         ),
+        types.Tool(
+            name="create_issue",
+            description=(
+                "Redmineにissueを起票する。"
+                "project_id と subject が必須。"
+                "tracker_id / priority_id は list_trackers / list_priorities で取得できる。"
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["project_id", "subject"],
+                "properties": {
+                    "project_id": {
+                        "type": "string",
+                        "description": "起票先プロジェクトのidentifierまたは数値ID。",
+                    },
+                    "subject": {"type": "string", "description": "issueのタイトル。"},
+                    "tracker_id": {
+                        "type": "integer",
+                        "description": "トラッカーの数値ID。",
+                    },
+                    "status_id": {
+                        "type": "integer",
+                        "description": "ステータスの数値ID。",
+                    },
+                    "priority_id": {
+                        "type": "integer",
+                        "description": "優先度の数値ID。",
+                    },
+                    "description": {"type": "string", "description": "issue詳細説明。"},
+                    "assigned_to_id": {
+                        "type": "integer",
+                        "description": "担当者の数値ID。",
+                    },
+                    "category_id": {
+                        "type": "integer",
+                        "description": "issueカテゴリーの数値ID。",
+                    },
+                    "fixed_version_id": {
+                        "type": "integer",
+                        "description": "対象バージョン（マイルストーン）の数値ID。",
+                    },
+                    "parent_issue_id": {
+                        "type": "integer",
+                        "description": "親issueの数値ID。",
+                    },
+                    "start_date": {
+                        "type": "string",
+                        "description": "開始日（YYYY-MM-DD形式）。",
+                    },
+                    "due_date": {
+                        "type": "string",
+                        "description": "期日（YYYY-MM-DD形式）。",
+                    },
+                    "estimated_hours": {
+                        "type": "number",
+                        "description": "予定工数（時間）。",
+                    },
+                    "done_ratio": {
+                        "type": "integer",
+                        "description": "進捗率（0〜100）。",
+                    },
+                    "watcher_user_ids": {
+                        "type": "array",
+                        "items": {"type": "integer"},
+                        "description": "ウォッチャーに追加するユーザーIDのリスト。",
+                    },
+                },
+            },
+        ),
+        types.Tool(
+            name="update_issue",
+            description=(
+                "Redmineのissueを更新する。"
+                "ステータス遷移・コメント追加（notes）・担当者変更等に使う。"
+                "変更したいフィールドだけ渡せばよい。"
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["issue_id"],
+                "properties": {
+                    "issue_id": {
+                        "type": "integer",
+                        "description": "更新するissueの数値ID。",
+                    },
+                    "subject": {"type": "string", "description": "新しいタイトル。"},
+                    "tracker_id": {
+                        "type": "integer",
+                        "description": "新しいトラッカーの数値ID。",
+                    },
+                    "status_id": {
+                        "type": "integer",
+                        "description": "新しいステータスの数値ID。",
+                    },
+                    "priority_id": {
+                        "type": "integer",
+                        "description": "新しい優先度の数値ID。",
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "新しい詳細説明。",
+                    },
+                    "assigned_to_id": {
+                        "type": "integer",
+                        "description": "新しい担当者の数値ID。",
+                    },
+                    "done_ratio": {
+                        "type": "integer",
+                        "description": "新しい進捗率（0〜100）。",
+                    },
+                    "due_date": {
+                        "type": "string",
+                        "description": "新しい期日（YYYY-MM-DD形式）。",
+                    },
+                    "estimated_hours": {
+                        "type": "number",
+                        "description": "新しい予定工数（時間）。",
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "ジャーナルに残すコメントテキスト。",
+                    },
+                    "private_notes": {
+                        "type": "boolean",
+                        "description": "Trueのとき非公開コメントとして記録。",
+                    },
+                },
+            },
+        ),
     ]
 
 
@@ -284,6 +412,47 @@ async def handle_call_tool(
                     include=arguments.get("include"),
                 )
                 return [types.TextContent(type="text", text=issue_result.model_dump_json())]
+            if name == "create_issue":
+                created: tools_issues.Issue = await tools_issues.create_issue(
+                    client,
+                    project_id=str(arguments["project_id"]),
+                    subject=str(arguments["subject"]),
+                    tracker_id=arguments.get("tracker_id"),
+                    status_id=arguments.get("status_id"),
+                    priority_id=arguments.get("priority_id"),
+                    description=arguments.get("description"),
+                    assigned_to_id=arguments.get("assigned_to_id"),
+                    category_id=arguments.get("category_id"),
+                    fixed_version_id=arguments.get("fixed_version_id"),
+                    parent_issue_id=arguments.get("parent_issue_id"),
+                    start_date=arguments.get("start_date"),
+                    due_date=arguments.get("due_date"),
+                    estimated_hours=arguments.get("estimated_hours"),
+                    done_ratio=arguments.get("done_ratio"),
+                    watcher_user_ids=arguments.get("watcher_user_ids"),
+                )
+                return [types.TextContent(type="text", text=created.model_dump_json())]
+            if name == "update_issue":
+                updated: tools_issues.Issue = await tools_issues.update_issue(
+                    client,
+                    issue_id=int(arguments["issue_id"]),
+                    subject=arguments.get("subject"),
+                    tracker_id=arguments.get("tracker_id"),
+                    status_id=arguments.get("status_id"),
+                    priority_id=arguments.get("priority_id"),
+                    description=arguments.get("description"),
+                    assigned_to_id=arguments.get("assigned_to_id"),
+                    category_id=arguments.get("category_id"),
+                    fixed_version_id=arguments.get("fixed_version_id"),
+                    parent_issue_id=arguments.get("parent_issue_id"),
+                    start_date=arguments.get("start_date"),
+                    due_date=arguments.get("due_date"),
+                    estimated_hours=arguments.get("estimated_hours"),
+                    done_ratio=arguments.get("done_ratio"),
+                    notes=arguments.get("notes"),
+                    private_notes=arguments.get("private_notes"),
+                )
+                return [types.TextContent(type="text", text=updated.model_dump_json())]
     except RedmineError as e:
         error_body: str = json.dumps({"error": str(e.category), "message": e.message})
         return [types.TextContent(type="text", text=error_body)]
