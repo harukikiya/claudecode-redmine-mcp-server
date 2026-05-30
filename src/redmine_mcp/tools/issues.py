@@ -228,3 +228,200 @@ async def get_issue(
     )
     issue_data: dict[str, Any] = data["issue"]
     return Issue.model_validate(issue_data)
+
+
+async def create_issue(
+    client: RedmineClient,
+    project_id: str,
+    subject: str,
+    tracker_id: int | None = None,
+    status_id: int | None = None,
+    priority_id: int | None = None,
+    description: str | None = None,
+    assigned_to_id: int | None = None,
+    category_id: int | None = None,
+    fixed_version_id: int | None = None,
+    parent_issue_id: int | None = None,
+    start_date: str | None = None,
+    due_date: str | None = None,
+    estimated_hours: float | None = None,
+    done_ratio: int | None = None,
+    watcher_user_ids: list[int] | None = None,
+) -> Issue:
+    """Redmineにissueを起票する。
+
+    Redmineの ``POST /issues.json`` をwrapする。
+    同名のissueが複数作られるリスクがあるため、重複チェックは呼び出し側の責任。
+
+    Args:
+        client: Redmine APIクライアント。
+        project_id: 起票先プロジェクトのidentifierまたは数値ID（必須）。
+        subject: issueのタイトル（必須）。
+        tracker_id: トラッカーの数値ID。省略時はRedmineのデフォルト。
+        status_id: ステータスの数値ID。省略時はRedmineのデフォルト。
+        priority_id: 優先度の数値ID。省略時はRedmineのデフォルト。
+        description: issue詳細説明。
+        assigned_to_id: 担当者の数値ID。
+        category_id: issueカテゴリーの数値ID。
+        fixed_version_id: 対象バージョン（マイルストーン）の数値ID。
+        parent_issue_id: 親issueの数値ID。
+        start_date: 開始日（YYYY-MM-DD形式）。
+        due_date: 期日（YYYY-MM-DD形式）。
+        estimated_hours: 予定工数（時間）。
+        done_ratio: 進捗率（0〜100の整数）。
+        watcher_user_ids: ウォッチャーに追加するユーザーIDのリスト。
+
+    Returns:
+        作成されたissueの詳細を含む ``Issue``。
+
+    Raises:
+        RedmineError: project_idが不正な場合（NOT_FOUND）、
+            バリデーションエラー（VALIDATION）、
+            認証エラー（AUTH_FAILED）。
+
+    Example:
+        >>> async with RedmineClient(config) as client:
+        ...     issue = await create_issue(
+        ...         client,
+        ...         project_id="myproject",
+        ...         subject="Fix login bug",
+        ...         description="Users cannot login.",
+        ...         tracker_id=1,
+        ...     )
+        ...     print(issue.id, issue.subject)
+        42 Fix login bug
+    """
+    body: dict[str, Any] = {
+        "project_id": project_id,
+        "subject": subject,
+    }
+    if tracker_id is not None:
+        body["tracker_id"] = tracker_id
+    if status_id is not None:
+        body["status_id"] = status_id
+    if priority_id is not None:
+        body["priority_id"] = priority_id
+    if description is not None:
+        body["description"] = description
+    if assigned_to_id is not None:
+        body["assigned_to_id"] = assigned_to_id
+    if category_id is not None:
+        body["category_id"] = category_id
+    if fixed_version_id is not None:
+        body["fixed_version_id"] = fixed_version_id
+    if parent_issue_id is not None:
+        body["parent_issue_id"] = parent_issue_id
+    if start_date is not None:
+        body["start_date"] = start_date
+    if due_date is not None:
+        body["due_date"] = due_date
+    if estimated_hours is not None:
+        body["estimated_hours"] = estimated_hours
+    if done_ratio is not None:
+        body["done_ratio"] = done_ratio
+    if watcher_user_ids is not None:
+        body["watcher_user_ids"] = watcher_user_ids
+
+    data: dict[str, Any] = await client.post("/issues.json", json={"issue": body})
+    return Issue.model_validate(data["issue"])
+
+
+async def update_issue(
+    client: RedmineClient,
+    issue_id: int,
+    subject: str | None = None,
+    tracker_id: int | None = None,
+    status_id: int | None = None,
+    priority_id: int | None = None,
+    description: str | None = None,
+    assigned_to_id: int | None = None,
+    category_id: int | None = None,
+    fixed_version_id: int | None = None,
+    parent_issue_id: int | None = None,
+    start_date: str | None = None,
+    due_date: str | None = None,
+    estimated_hours: float | None = None,
+    done_ratio: int | None = None,
+    notes: str | None = None,
+    private_notes: bool | None = None,
+) -> Issue:
+    """Redmineのissueを更新する。ステータス遷移やコメント追加に使う。
+
+    Redmineの ``PUT /issues/:id.json`` をwrapする。
+    更新後に ``GET /issues/:id.json`` で最新状態を取得して返す。
+
+    Args:
+        client: Redmine APIクライアント。
+        issue_id: 更新するissueの数値ID（必須）。
+        subject: 新しいタイトル。
+        tracker_id: 新しいトラッカーの数値ID。
+        status_id: 新しいステータスの数値ID。
+        priority_id: 新しい優先度の数値ID。
+        description: 新しい詳細説明。
+        assigned_to_id: 新しい担当者の数値ID。
+        category_id: 新しいissueカテゴリーの数値ID。
+        fixed_version_id: 新しい対象バージョンの数値ID。
+        parent_issue_id: 新しい親issueの数値ID。
+        start_date: 新しい開始日（YYYY-MM-DD形式）。
+        due_date: 新しい期日（YYYY-MM-DD形式）。
+        estimated_hours: 新しい予定工数（時間）。
+        done_ratio: 新しい進捗率（0〜100の整数）。
+        notes: ジャーナルに残すコメントテキスト。
+        private_notes: Trueのとき非公開コメントとして記録。
+
+    Returns:
+        更新後のissueの詳細を含む ``Issue``。
+
+    Raises:
+        RedmineError: issueが存在しない場合（NOT_FOUND）、
+            バリデーションエラー（VALIDATION）、
+            認証エラー（AUTH_FAILED）。
+
+    Example:
+        >>> async with RedmineClient(config) as client:
+        ...     issue = await update_issue(
+        ...         client,
+        ...         issue_id=42,
+        ...         status_id=5,
+        ...         notes="Resolved in v1.2",
+        ...     )
+        ...     print(issue.status.name)
+        'Closed'
+    """
+    body: dict[str, Any] = {}
+    if subject is not None:
+        body["subject"] = subject
+    if tracker_id is not None:
+        body["tracker_id"] = tracker_id
+    if status_id is not None:
+        body["status_id"] = status_id
+    if priority_id is not None:
+        body["priority_id"] = priority_id
+    if description is not None:
+        body["description"] = description
+    if assigned_to_id is not None:
+        body["assigned_to_id"] = assigned_to_id
+    if category_id is not None:
+        body["category_id"] = category_id
+    if fixed_version_id is not None:
+        body["fixed_version_id"] = fixed_version_id
+    if parent_issue_id is not None:
+        body["parent_issue_id"] = parent_issue_id
+    if start_date is not None:
+        body["start_date"] = start_date
+    if due_date is not None:
+        body["due_date"] = due_date
+    if estimated_hours is not None:
+        body["estimated_hours"] = estimated_hours
+    if done_ratio is not None:
+        body["done_ratio"] = done_ratio
+    if notes is not None:
+        body["notes"] = notes
+    if private_notes is not None:
+        body["private_notes"] = private_notes
+
+    await client.put(f"/issues/{issue_id}.json", json={"issue": body})
+
+    # PUTは204を返すことがあるため、更新後のissueをGETで取得して返す
+    data: dict[str, Any] = await client.get(f"/issues/{issue_id}.json")
+    return Issue.model_validate(data["issue"])
