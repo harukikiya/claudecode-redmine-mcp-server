@@ -18,7 +18,7 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - uses: actions/labeler@v5
+      - uses: actions/labeler@v6
         with:
           configuration-path: .github/labeler.yml
           # 既存ラベルを保持するか上書きするか
