@@ -47,6 +47,16 @@ ignore = []
 [tool.ruff.lint.isort]
 known-first-party = ["redmine_mcp"]
 
+[tool.coverage.run]
+source = ["src"]
+
+[tool.coverage.report]
+fail_under = 80
+exclude_also = [
+    "if __name__ == .__main__.:",
+    "pragma: no cover",
+]
+
 [tool.mypy]
 python_version = "3.11"
 strict = true

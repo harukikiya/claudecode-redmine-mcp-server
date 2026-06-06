@@ -613,7 +613,7 @@ async def handle_call_tool(
     raise ValueError(f"Unknown tool: {name!r}")
 
 
-async def _run_server() -> None:
+async def _run_server() -> None:  # pragma: no cover
     """stdio transportでMCP serverを起動する。
 
     stdin/stdoutをMCP messageのストリームとして使用する。
@@ -626,7 +626,7 @@ async def _run_server() -> None:
         )
 
 
-def main() -> None:
+def main() -> None:  # pragma: no cover
     """CLIエントリポイント。
 
     ``uv run redmine-mcp`` または ``python -m redmine_mcp.server`` で起動する。
@@ -634,5 +634,5 @@ def main() -> None:
     asyncio.run(_run_server())
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()
