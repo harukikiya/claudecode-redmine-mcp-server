@@ -67,7 +67,7 @@ jobs:
       # Codecovにカバレッジレポートをアップロード
       # repo > Settings > Secrets > Actions に CODECOV_TOKEN を登録する必要あり
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v6
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           # tokenが未設定でもCI自体は落とさない（初期セットアップ前にCIを通すため）
