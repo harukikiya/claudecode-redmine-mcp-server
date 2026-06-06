@@ -57,9 +57,9 @@ _ENTRY_DATA: dict[str, object] = {
 
 
 async def test_handle_list_tools_returns_all_tools() -> None:
-    """handle_list_tools が15ツール全ての名前を返すこと。
+    """handle_list_tools が16ツール全ての名前を返すこと。
 
-    ping + 14 Redmine toolが登録されていることを確認する。
+    ping + 15 Redmine toolが登録されていることを確認する。
     """
     tools: list[types.Tool] = await handle_list_tools()
     names: set[str] = {t.name for t in tools}
@@ -80,6 +80,7 @@ async def test_handle_list_tools_returns_all_tools() -> None:
         "update_time_entry",
         "list_versions",
         "list_issue_categories",
+        "list_users",
     }
     assert names == expected
 
@@ -534,6 +535,32 @@ async def test_dispatch_list_issue_categories(
     data: list[dict[str, Any]] = json.loads(result[0].text)
     assert data[0]["id"] == 1
     assert data[0]["name"] == "Frontend"
+
+
+async def test_dispatch_list_users(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """list_users: user一覧とpaginationがTextContent JSONで返ること。"""
+    monkeypatch.setenv("REDMINE_URL", _TEST_URL)
+    monkeypatch.setenv("REDMINE_API_KEY", _TEST_API_KEY)
+
+    httpx_mock.add_response(
+        method="GET",
+        json={
+            "users": [{"id": 1, "login": "jsmith", "firstname": "John", "lastname": "Smith"}],
+            "total_count": 1,
+            "offset": 0,
+            "limit": 25,
+        },
+    )
+
+    result: list[types.TextContent] = await handle_call_tool("list_users", {})
+
+    assert len(result) == 1
+    data: dict[str, Any] = json.loads(result[0].text)
+    assert data["total_count"] == 1
+    assert data["users"][0]["login"] == "jsmith"
 
 
 # ---------------------------------------------------------------------------

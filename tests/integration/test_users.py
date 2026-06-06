@@ -1,4 +1,4 @@
-"""get_current_user tool の integration テスト。
+"""get_current_user / list_users tool の integration テスト。
 
 pytest-httpx でRedmine APIをmockし、tool関数の動作を検証する。
 """
@@ -12,7 +12,13 @@ from pytest_httpx import HTTPXMock
 from redmine_mcp.client import RedmineClient
 from redmine_mcp.config import RedmineConfig
 from redmine_mcp.errors import ErrorCategory, RedmineError
-from redmine_mcp.tools.users import CurrentUser, get_current_user
+from redmine_mcp.tools.users import (
+    CurrentUser,
+    ListUsersResult,
+    User,
+    get_current_user,
+    list_users,
+)
 
 _TEST_URL: str = "http://test.redmine.example"
 _TEST_API_KEY: str = "test-api-key-abc123"
@@ -171,3 +177,83 @@ async def test_get_current_user_mail_optional(httpx_mock: HTTPXMock) -> None:
 
     assert result.mail is None
     assert result.last_login_on is None
+
+
+# ---------------------------------------------------------------------------
+# list_users
+# ---------------------------------------------------------------------------
+
+_USERS_PAYLOAD: dict[str, object] = {
+    "users": [
+        {
+            "id": 1,
+            "login": "jsmith",
+            "firstname": "John",
+            "lastname": "Smith",
+            "mail": "jsmith@example.com",
+            "status": 1,
+            "created_on": "2020-01-01T00:00:00Z",
+            "last_login_on": "2026-06-01T00:00:00Z",
+        },
+        {
+            "id": 2,
+            "firstname": "Jane",
+            "lastname": "Doe",
+        },
+    ],
+    "total_count": 2,
+    "offset": 0,
+    "limit": 25,
+}
+
+
+async def test_list_users_success(httpx_mock: HTTPXMock) -> None:
+    """正常系: user一覧とpaginationをパースして返すこと。"""
+    httpx_mock.add_response(
+        method="GET",
+        url=f"{_TEST_URL}/users.json?limit=25&offset=0",
+        json=_USERS_PAYLOAD,
+    )
+
+    async with RedmineClient(_TEST_CONFIG) as client:
+        result: ListUsersResult = await list_users(client)
+
+    assert result.total_count == 2
+    assert len(result.users) == 2
+    first: User = result.users[0]
+    assert first.id == 1
+    assert first.login == "jsmith"
+    assert first.firstname == "John"
+    # 権限により省略されるフィールドはoptionalで None になること
+    assert result.users[1].login is None
+    assert result.users[1].mail is None
+
+
+async def test_list_users_sends_filters(httpx_mock: HTTPXMock) -> None:
+    """name / status filter がクエリパラメータとして送られること。"""
+    httpx_mock.add_response(
+        method="GET",
+        json={"users": [], "total_count": 0, "offset": 0, "limit": 25},
+    )
+
+    async with RedmineClient(_TEST_CONFIG) as client:
+        await list_users(client, name="smith", status=1)
+
+    request = httpx_mock.get_requests()[0]
+    assert request.url.params["name"] == "smith"
+    assert request.url.params["status"] == "1"
+
+
+async def test_list_users_forbidden(httpx_mock: HTTPXMock) -> None:
+    """異常系: admin権限不足（403）で AUTH_FAILED になること。"""
+    httpx_mock.add_response(
+        method="GET",
+        url=f"{_TEST_URL}/users.json?limit=25&offset=0",
+        status_code=403,
+    )
+
+    with pytest.raises(RedmineError) as exc_info:
+        async with RedmineClient(_TEST_CONFIG) as client:
+            await list_users(client)
+
+    assert exc_info.value.category == ErrorCategory.AUTH_FAILED

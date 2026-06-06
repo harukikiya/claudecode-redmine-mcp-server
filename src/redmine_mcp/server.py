@@ -469,6 +469,41 @@ async def handle_list_tools() -> list[types.Tool]:
                 },
             },
         ),
+        types.Tool(
+            name="list_users",
+            description=(
+                "user一覧を取得する（assignee検索用）。"
+                "issueの assigned_to_id に指定するuserのIDを探すために使う。"
+                "admin権限が必要。"
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": (
+                            "login / firstname / lastname / mail への部分一致でfilterする。"
+                        ),
+                    },
+                    "status": {
+                        "type": "integer",
+                        "description": (
+                            "アカウントステータス（1: active, 2: registered, 3: locked）。"
+                        ),
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "取得件数上限（default 25, max 100）",
+                        "default": 25,
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "ページネーションオフセット",
+                        "default": 0,
+                    },
+                },
+            },
+        ),
     ]
 
 
@@ -667,6 +702,15 @@ async def handle_call_tool(
                         text=json.dumps([c.model_dump() for c in categories], ensure_ascii=False),
                     )
                 ]
+            if name == "list_users":
+                users_result: tools_users.ListUsersResult = await tools_users.list_users(
+                    client,
+                    name=arguments.get("name"),
+                    status=arguments.get("status"),
+                    limit=int(arguments.get("limit", 25)),
+                    offset=int(arguments.get("offset", 0)),
+                )
+                return [types.TextContent(type="text", text=users_result.model_dump_json())]
     except RedmineError as e:
         error_body: str = json.dumps({"error": str(e.category), "message": e.message})
         return [types.TextContent(type="text", text=error_body)]
