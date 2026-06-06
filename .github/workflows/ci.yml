@@ -33,8 +33,9 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
-          # uv自体のバージョン。"latest"だと再現性が落ちるので、運用に乗ったら固定推奨
-          version: "latest"
+          # uv自体のバージョンを固定。"latest"だとuv側の挙動変化でCIが再現しなくなるため。
+          # 更新はdependabot（github-actions/pip）経由で検知・レビューする。
+          version: "0.8.0"
           # uv cacheをGitHub Actions cacheに保存（依存解決の高速化）
           enable-cache: true
 
@@ -43,8 +44,11 @@ jobs:
         run: uv python install
 
       # 依存をインストール（dev dependenciesも含む）
+      # --locked: uv.lock が pyproject.toml と整合していることを保証し、
+      # ズレている（=ロックを更新せずに依存を変えた）場合はCIを fail させる。
+      # これによりツール（ruff/mypy等）が勝手に最新へ drift して main を割る事故を防ぐ。
       - name: Install dependencies
-        run: uv sync --all-extras --dev
+        run: uv sync --all-extras --dev --locked
 
       # ruff lint（コードスタイル + 静的解析）
       - name: Run ruff check
