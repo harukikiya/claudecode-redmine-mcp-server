@@ -57,9 +57,9 @@ _ENTRY_DATA: dict[str, object] = {
 
 
 async def test_handle_list_tools_returns_all_tools() -> None:
-    """handle_list_tools が13ツール全ての名前を返すこと。
+    """handle_list_tools が15ツール全ての名前を返すこと。
 
-    ping + 12 Redmine toolが登録されていることを確認する。
+    ping + 14 Redmine toolが登録されていることを確認する。
     """
     tools: list[types.Tool] = await handle_list_tools()
     names: set[str] = {t.name for t in tools}
@@ -78,6 +78,8 @@ async def test_handle_list_tools_returns_all_tools() -> None:
         "list_time_entries",
         "create_time_entry",
         "update_time_entry",
+        "list_versions",
+        "list_issue_categories",
     }
     assert names == expected
 
@@ -464,6 +466,74 @@ async def test_dispatch_update_time_entry(
     assert len(result) == 1
     data: dict[str, Any] = json.loads(result[0].text)
     assert data["hours"] == 3.0
+
+
+async def test_dispatch_list_versions(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """list_versions: バージョン一覧がTextContent JSON配列で返ること。"""
+    monkeypatch.setenv("REDMINE_URL", _TEST_URL)
+    monkeypatch.setenv("REDMINE_API_KEY", _TEST_API_KEY)
+
+    httpx_mock.add_response(
+        method="GET",
+        url=f"{_TEST_URL}/projects/myproject/versions.json",
+        json={
+            "versions": [
+                {
+                    "id": 1,
+                    "name": "v1.0",
+                    "project": {"id": 1, "name": "My Project"},
+                    "status": "open",
+                    "created_on": "2026-01-01T00:00:00Z",
+                }
+            ]
+        },
+    )
+
+    result: list[types.TextContent] = await handle_call_tool(
+        "list_versions",
+        {"project_id": "myproject"},
+    )
+
+    assert len(result) == 1
+    data: list[dict[str, Any]] = json.loads(result[0].text)
+    assert data[0]["id"] == 1
+    assert data[0]["name"] == "v1.0"
+
+
+async def test_dispatch_list_issue_categories(
+    httpx_mock: HTTPXMock,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """list_issue_categories: カテゴリー一覧がTextContent JSON配列で返ること。"""
+    monkeypatch.setenv("REDMINE_URL", _TEST_URL)
+    monkeypatch.setenv("REDMINE_API_KEY", _TEST_API_KEY)
+
+    httpx_mock.add_response(
+        method="GET",
+        url=f"{_TEST_URL}/projects/myproject/issue_categories.json",
+        json={
+            "issue_categories": [
+                {
+                    "id": 1,
+                    "name": "Frontend",
+                    "project": {"id": 1, "name": "My Project"},
+                }
+            ]
+        },
+    )
+
+    result: list[types.TextContent] = await handle_call_tool(
+        "list_issue_categories",
+        {"project_id": "myproject"},
+    )
+
+    assert len(result) == 1
+    data: list[dict[str, Any]] = json.loads(result[0].text)
+    assert data[0]["id"] == 1
+    assert data[0]["name"] == "Frontend"
 
 
 # ---------------------------------------------------------------------------
