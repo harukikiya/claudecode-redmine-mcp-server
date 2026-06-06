@@ -20,6 +20,7 @@ from redmine_mcp.errors import RedmineError
 from redmine_mcp.tools import enumerations as tools_enums
 from redmine_mcp.tools import issues as tools_issues
 from redmine_mcp.tools import projects as tools_projects
+from redmine_mcp.tools import time_entries as tools_time
 from redmine_mcp.tools import users as tools_users
 
 SERVER_NAME: str = "redmine-mcp-server"
@@ -317,6 +318,122 @@ async def handle_list_tools() -> list[types.Tool]:
                 },
             },
         ),
+        types.Tool(
+            name="list_time_entries",
+            description=("工数記録の一覧を取得する。issue_id / project_id / 日付でfilterできる。"),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "issue_id": {
+                        "type": "integer",
+                        "description": "特定issueの工数記録のみ取得する場合に指定。",
+                    },
+                    "project_id": {
+                        "type": "string",
+                        "description": "特定プロジェクトの工数記録のみ取得する場合に指定。",
+                    },
+                    "user_id": {
+                        "type": "integer",
+                        "description": "特定ユーザーの工数記録のみ取得する場合に指定。",
+                    },
+                    "spent_on": {
+                        "type": "string",
+                        "description": "特定日（YYYY-MM-DD）の工数記録のみ取得。",
+                    },
+                    "from_date": {
+                        "type": "string",
+                        "description": "指定日以降の工数記録を取得（YYYY-MM-DD）。",
+                    },
+                    "to_date": {
+                        "type": "string",
+                        "description": "指定日以前の工数記録を取得（YYYY-MM-DD）。",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "取得件数上限（default 25, max 100）",
+                        "default": 25,
+                    },
+                    "offset": {
+                        "type": "integer",
+                        "description": "ページネーションオフセット",
+                        "default": 0,
+                    },
+                },
+            },
+        ),
+        types.Tool(
+            name="create_time_entry",
+            description=(
+                "Redmineに工数を記録する。"
+                "hours と issue_id（または project_id）が必須。"
+                "spent_on を省略すると本日の日付で記録される。"
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["hours"],
+                "properties": {
+                    "hours": {
+                        "type": "number",
+                        "description": "記録する工数（時間）。必須。",
+                    },
+                    "issue_id": {
+                        "type": "integer",
+                        "description": "工数を紐付けるissueの数値ID。",
+                    },
+                    "project_id": {
+                        "type": "string",
+                        "description": (
+                            "工数を紐付けるプロジェクトのidentifierまたは数値ID。"
+                            "issue_id を指定しない場合は必須。"
+                        ),
+                    },
+                    "spent_on": {
+                        "type": "string",
+                        "description": "作業日（YYYY-MM-DD形式）。省略時は本日。",
+                    },
+                    "activity_id": {
+                        "type": "integer",
+                        "description": "作業種別の数値ID。",
+                    },
+                    "comments": {
+                        "type": "string",
+                        "description": "作業内容のメモ。",
+                    },
+                },
+            },
+        ),
+        types.Tool(
+            name="update_time_entry",
+            description=("Redmineの工数記録を修正する。変更したいフィールドだけ渡せばよい。"),
+            inputSchema={
+                "type": "object",
+                "required": ["time_entry_id"],
+                "properties": {
+                    "time_entry_id": {
+                        "type": "integer",
+                        "description": "更新する工数記録の数値ID。",
+                    },
+                    "hours": {"type": "number", "description": "新しい工数（時間）。"},
+                    "spent_on": {
+                        "type": "string",
+                        "description": "新しい作業日（YYYY-MM-DD形式）。",
+                    },
+                    "activity_id": {
+                        "type": "integer",
+                        "description": "新しい作業種別の数値ID。",
+                    },
+                    "comments": {"type": "string", "description": "新しいコメント。"},
+                    "issue_id": {
+                        "type": "integer",
+                        "description": "紐付け先issueの数値IDを変更する場合に指定。",
+                    },
+                    "project_id": {
+                        "type": "string",
+                        "description": "紐付け先プロジェクトのidentifierを変更する場合に指定。",
+                    },
+                },
+            },
+        ),
     ]
 
 
@@ -453,6 +570,42 @@ async def handle_call_tool(
                     private_notes=arguments.get("private_notes"),
                 )
                 return [types.TextContent(type="text", text=updated.model_dump_json())]
+            if name == "list_time_entries":
+                te_result: tools_time.ListTimeEntriesResult = await tools_time.list_time_entries(
+                    client,
+                    issue_id=arguments.get("issue_id"),
+                    project_id=arguments.get("project_id"),
+                    user_id=arguments.get("user_id"),
+                    spent_on=arguments.get("spent_on"),
+                    from_date=arguments.get("from_date"),
+                    to_date=arguments.get("to_date"),
+                    limit=int(arguments.get("limit", 25)),
+                    offset=int(arguments.get("offset", 0)),
+                )
+                return [types.TextContent(type="text", text=te_result.model_dump_json())]
+            if name == "create_time_entry":
+                created_te: tools_time.TimeEntry = await tools_time.create_time_entry(
+                    client,
+                    hours=float(arguments["hours"]),
+                    issue_id=arguments.get("issue_id"),
+                    project_id=arguments.get("project_id"),
+                    spent_on=arguments.get("spent_on"),
+                    activity_id=arguments.get("activity_id"),
+                    comments=arguments.get("comments"),
+                )
+                return [types.TextContent(type="text", text=created_te.model_dump_json())]
+            if name == "update_time_entry":
+                updated_te: tools_time.TimeEntry = await tools_time.update_time_entry(
+                    client,
+                    time_entry_id=int(arguments["time_entry_id"]),
+                    hours=arguments.get("hours"),
+                    spent_on=arguments.get("spent_on"),
+                    activity_id=arguments.get("activity_id"),
+                    comments=arguments.get("comments"),
+                    issue_id=arguments.get("issue_id"),
+                    project_id=arguments.get("project_id"),
+                )
+                return [types.TextContent(type="text", text=updated_te.model_dump_json())]
     except RedmineError as e:
         error_body: str = json.dumps({"error": str(e.category), "message": e.message})
         return [types.TextContent(type="text", text=error_body)]
