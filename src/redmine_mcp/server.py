@@ -19,6 +19,7 @@ from redmine_mcp.config import RedmineConfig
 from redmine_mcp.errors import RedmineError
 from redmine_mcp.tools import enumerations as tools_enums
 from redmine_mcp.tools import issues as tools_issues
+from redmine_mcp.tools import project_resources as tools_project_resources
 from redmine_mcp.tools import projects as tools_projects
 from redmine_mcp.tools import time_entries as tools_time
 from redmine_mcp.tools import users as tools_users
@@ -434,6 +435,40 @@ async def handle_list_tools() -> list[types.Tool]:
                 },
             },
         ),
+        types.Tool(
+            name="list_versions",
+            description=(
+                "プロジェクト内のバージョン（マイルストーン）一覧を取得する。"
+                "create_issue で fixed_version_id を指定するときに使う。"
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["project_id"],
+                "properties": {
+                    "project_id": {
+                        "type": "string",
+                        "description": "バージョンを取得するプロジェクトのidentifierまたは数値ID。",
+                    },
+                },
+            },
+        ),
+        types.Tool(
+            name="list_issue_categories",
+            description=(
+                "プロジェクト内のissueカテゴリー一覧を取得する。"
+                "create_issue で category_id を指定するときに使う。"
+            ),
+            inputSchema={
+                "type": "object",
+                "required": ["project_id"],
+                "properties": {
+                    "project_id": {
+                        "type": "string",
+                        "description": "カテゴリーを取得するプロジェクトのidentifierまたは数値ID。",
+                    },
+                },
+            },
+        ),
     ]
 
 
@@ -606,6 +641,32 @@ async def handle_call_tool(
                     project_id=arguments.get("project_id"),
                 )
                 return [types.TextContent(type="text", text=updated_te.model_dump_json())]
+            if name == "list_versions":
+                versions: list[
+                    tools_project_resources.Version
+                ] = await tools_project_resources.list_versions(
+                    client,
+                    project_id=str(arguments["project_id"]),
+                )
+                return [
+                    types.TextContent(
+                        type="text",
+                        text=json.dumps([v.model_dump() for v in versions], ensure_ascii=False),
+                    )
+                ]
+            if name == "list_issue_categories":
+                categories: list[
+                    tools_project_resources.IssueCategory
+                ] = await tools_project_resources.list_issue_categories(
+                    client,
+                    project_id=str(arguments["project_id"]),
+                )
+                return [
+                    types.TextContent(
+                        type="text",
+                        text=json.dumps([c.model_dump() for c in categories], ensure_ascii=False),
+                    )
+                ]
     except RedmineError as e:
         error_body: str = json.dumps({"error": str(e.category), "message": e.message})
         return [types.TextContent(type="text", text=error_body)]
