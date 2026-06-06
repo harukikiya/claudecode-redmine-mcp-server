@@ -17,7 +17,7 @@ from redmine_mcp.tools.issues import Issue, create_issue, update_issue
 _TEST_URL: str = "http://test.redmine.example"
 _TEST_API_KEY: str = "test-api-key-abc123"
 
-_TEST_CONFIG: RedmineConfig = RedmineConfig(  # type: ignore[call-arg]
+_TEST_CONFIG: RedmineConfig = RedmineConfig(
     url=_TEST_URL,
     api_key=_TEST_API_KEY,
 )
@@ -36,7 +36,7 @@ _CREATED_ISSUE: dict[str, object] = {
 }
 
 _UPDATED_ISSUE: dict[str, object] = {
-    **_CREATED_ISSUE,  # type: ignore[arg-type]
+    **_CREATED_ISSUE,
     "id": 42,
     "status": {"id": 5, "name": "Closed"},
     "done_ratio": 100,
@@ -116,7 +116,7 @@ async def test_create_issue_with_optional_fields(httpx_mock: HTTPXMock) -> None:
     import json
 
     body: dict[str, object] = json.loads(request.content)
-    issue_body = body["issue"]  # type: ignore[index]
+    issue_body = body["issue"]
     assert issue_body["tracker_id"] == 1  # type: ignore[index]
     assert issue_body["priority_id"] == 4  # type: ignore[index]
     assert issue_body["assigned_to_id"] == 2  # type: ignore[index]
@@ -233,7 +233,7 @@ async def test_update_issue_with_notes(httpx_mock: HTTPXMock) -> None:
     import json
 
     body: dict[str, object] = json.loads(put_request.content)
-    issue_body = body["issue"]  # type: ignore[index]
+    issue_body = body["issue"]
     assert issue_body["notes"] == "Resolved in v1.2"  # type: ignore[index]
     assert issue_body["status_id"] == 5  # type: ignore[index]
 

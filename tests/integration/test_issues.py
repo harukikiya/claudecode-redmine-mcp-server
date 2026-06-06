@@ -17,7 +17,7 @@ from redmine_mcp.tools.issues import Issue, ListIssuesResult, get_issue, list_is
 _TEST_URL: str = "http://test.redmine.example"
 _TEST_API_KEY: str = "test-api-key-abc123"
 
-_TEST_CONFIG: RedmineConfig = RedmineConfig(  # type: ignore[call-arg]
+_TEST_CONFIG: RedmineConfig = RedmineConfig(
     url=_TEST_URL,
     api_key=_TEST_API_KEY,
 )
@@ -179,7 +179,7 @@ async def test_get_issue_with_journals(httpx_mock: HTTPXMock) -> None:
     """include=journals 指定時にジャーナルが取得できること。"""
     payload: dict[str, object] = {
         "issue": {
-            **_ISSUE_DATA,  # type: ignore[arg-type]
+            **_ISSUE_DATA,
             "journals": [
                 {
                     "id": 1,

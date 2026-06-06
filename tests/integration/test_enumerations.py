@@ -24,7 +24,7 @@ from redmine_mcp.tools.enumerations import (
 _TEST_URL: str = "http://test.redmine.example"
 _TEST_API_KEY: str = "test-api-key-abc123"
 
-_TEST_CONFIG: RedmineConfig = RedmineConfig(  # type: ignore[call-arg]
+_TEST_CONFIG: RedmineConfig = RedmineConfig(
     url=_TEST_URL,
     api_key=_TEST_API_KEY,
 )
