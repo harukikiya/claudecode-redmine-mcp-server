@@ -27,7 +27,7 @@ jobs:
     steps:
       # コードをcheckout
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       # uvをセットアップ（ADR-0003で採用）
       - name: Install uv
